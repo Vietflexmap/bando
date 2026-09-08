@@ -7,15 +7,17 @@
   <meta name="description" content="Vietflexmap Automatic Commune Map Generator - biên tập, xem trước và xuất bản đồ hành chính trên mọi thiết bị." />
   <title>Vietflexmap · Automatic Commune Map Generator</title>
 
-  <link rel="preconnect" href="https://unpkg.com" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Vietflexmap/VN@6144d565fcf236727577ab3c4471bbe49f86892f/dist/vietflex.css" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="ux.css" />
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/gh/Vietflexmap/VN@6144d565fcf236727577ab3c4471bbe49f86892f/dist/vietflex.js"></script>
+  <script>window.L = window.Vietflex;</script>
   <script src="https://unpkg.com/esri-leaflet@3.0.15/dist/esri-leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <script src="vietflex-core.js"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -108,7 +110,7 @@
             <button id="clearLogoBtn" class="mini secondary" type="button">Bỏ logo</button>
           </div>
           <label>Nguồn dữ liệu
-            <textarea id="sourceInput" rows="2">Nền bản đồ: Vietflexmap / OpenStreetMap / VN-SDI. Ranh giới chi tiết: dữ liệu GeoJSON do người dùng cung cấp.</textarea>
+            <textarea id="sourceInput" rows="2">Nền bản đồ: Vietflex Map Core / Google Roadmap / VN-SDI. Ranh giới chi tiết: dữ liệu GeoJSON do người dùng cung cấp hoặc Automatic Commune Map Generator tải tự động.</textarea>
           </label>
           <label>Ghi chú
             <textarea id="noteInput" rows="3">Ranh giới và thông tin trên bản đồ cần được đối chiếu với hồ sơ pháp lý, dữ liệu địa giới và văn bản hiện hành trước khi sử dụng chính thức.</textarea>
@@ -119,7 +121,7 @@
           <div class="section-title"><span>03</span><h2>Nền & ranh giới</h2></div>
           <label>Nền bản đồ
             <select id="basemapSelect">
-              <option value="osm" selected>Vietflex · nền đường phố OSM</option>
+              <option value="osm" selected>Vietflex · Google Roadmap</option>
               <option value="imagery">Vệ tinh · Esri World Imagery</option>
               <option value="vnsdi">VN-SDI · Bản đồ hành chính</option>
               <option value="none">Nền trắng · chỉ ranh giới</option>
@@ -183,7 +185,7 @@
             <button id="printBtn" class="secondary" type="button">In / Save PDF</button>
             <button id="resetBtn" class="secondary" type="button">Về Việt Nam</button>
           </div>
-          <p class="help">PNG/PDF luôn xuất ở kích thước tờ giấy thật, không phụ thuộc mức thu phóng đang xem. Nếu máy chủ nền chặn CORS, dùng “In / Save PDF”.</p>
+          <p class="help">PNG/PDF luôn xuất ở kích thước tờ giấy thật, không phụ thuộc mức thu phóng đang xem. Google legacy tiles có thể hạn chế CORS; khi đó dùng “In / Save PDF”, VN-SDI, vệ tinh Esri hoặc nền trắng.</p>
         </section>
       </div>
 
@@ -288,7 +290,7 @@
                     <dt>Tỉnh / TP</dt><dd id="provincePrint">—</dd>
                     <dt>Xã / phường</dt><dd id="communePrint">—</dd>
                     <dt>Hệ tọa độ hiển thị</dt><dd>WGS 84 · EPSG:4326</dd>
-                    <dt>Nền WebGIS</dt><dd id="basemapPrint">Vietflex · OSM</dd>
+                    <dt>Nền WebGIS</dt><dd id="basemapPrint">Vietflex · Google Roadmap</dd>
                     <dt>Số đối tượng</dt><dd id="featureCountPrint">0</dd>
                     <dt>Ngày lập</dt><dd id="datePrint">—</dd>
                   </dl>
@@ -304,7 +306,7 @@
             <footer class="sheet-footer">
               <div class="source-block">
                 <strong>NGUỒN DỮ LIỆU</strong>
-                <span id="sourcePrint">Nền bản đồ: Vietflexmap / OpenStreetMap / VN-SDI. Ranh giới chi tiết: dữ liệu GeoJSON do người dùng cung cấp.</span>
+                <span id="sourcePrint">Nền bản đồ: Vietflex Map Core / Google Roadmap / VN-SDI. Ranh giới chi tiết: dữ liệu GeoJSON do người dùng cung cấp hoặc Automatic Commune Map Generator tải tự động.</span>
               </div>
               <div class="credits-block">
                 <strong>VIETFLEXMAP MAP COMPOSER</strong>
@@ -331,9 +333,9 @@
   <script>
     window.__vfMaps = [];
     (() => {
-      const leafletMapFactory = L.map;
+      const vietflexMapFactory = L.map;
       L.map = function (...args) {
-        const instance = leafletMapFactory(...args);
+        const instance = vietflexMapFactory(...args);
         window.__vfMaps.push(instance);
         return instance;
       };
