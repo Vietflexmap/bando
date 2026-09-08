@@ -1,63 +1,104 @@
-# Vietflexmap · Bản đồ cấp xã
+# Vietflexmap · Automatic Commune Map Generator
 
-**Map Composer chạy trực tiếp trên trình duyệt để tạo nhanh layout bản đồ hành chính cấp xã và xuất PNG/PDF chuyên nghiệp.**
+**Gõ tên xã/phường → tự tìm đơn vị → tải ranh giới → dựng layout bản đồ → chỉnh tay → xuất PNG/PDF.**
 
 Trang chạy: **https://vietflexmap.github.io/bando/**
 
-## Kiến trúc
+## Chế độ tự động
 
-`Nền bản đồ` → `Ranh giới/biên giới hành chính` → `GeoJSON địa phương` → `Nhãn + lưới + tỷ lệ + inset` → `Layout A2/A3/A4` → `PNG/PDF/Print`
+Phiên bản mới mở rộng Map Composer thành **Automatic Commune Map Generator** nhưng vẫn giữ toàn bộ chức năng biên tập thủ công.
 
-Dự án kế thừa cách tổ chức bản đồ nhanh từ `Vietflexmap/anhmap`, nhưng tách phần **map** và **layout xuất bản đồ** thành các lớp riêng để dễ biên tập.
+Quy trình tự động:
 
-## Tính năng chính
+`Tên xã/phường` → `tra danh mục 34 tỉnh / 3.321 đơn vị cấp xã` → `xác định mã tỉnh + mã xã` → `tải GeoJSON xã` → `tải GeoJSON tỉnh` → `fit xã trên map chính` → `fit tỉnh + highlight xã trên inset` → `điền tiêu đề / mã bản đồ / nguồn` → `lưới + tỷ lệ + chú giải` → `PNG / PDF`
+
+### Cách dùng nhanh
+
+1. Ở khung **Automatic Commune Map Generator**, chọn tỉnh nếu cần.
+2. Gõ tên xã/phường/đặc khu, ví dụ `Vĩnh Thịnh`.
+3. Nếu tên trùng, chọn đúng kết quả theo **tỉnh + mã đơn vị**.
+4. Bấm **Tạo ngay** hoặc click trực tiếp kết quả.
+5. Hệ thống tự tải polygon xã và polygon tỉnh, tự điền nội dung tờ bản đồ và dựng sơ đồ vị trí.
+6. Chỉnh nền, nhãn, lưới, tỷ lệ, ghi chú, khổ giấy nếu cần.
+7. Xuất PNG/PDF hoặc Print / Save PDF.
+
+## Cơ chế chống chọn nhầm và fallback
+
+- Tìm kiếm không dấu/có dấu và theo mã đơn vị.
+- Có bộ lọc tỉnh/thành phố để xử lý các xã trùng tên.
+- URL GeoJSON được suy ra từ mã + tên đơn vị.
+- Nếu tên file có ký tự đặc biệt làm URL suy đoán không khớp, ứng dụng tra thư mục theo **mã xã** để lấy đúng file.
+- Nếu nguồn GeoJSON chính không phản hồi, ứng dụng thử OpenStreetMap/Nominatim làm nguồn polygon dự phòng và hiển thị cảnh báo kiểm tra ranh giới.
+- Chế độ nạp GeoJSON thủ công luôn được giữ lại, không phụ thuộc Automatic Generator.
+
+## Map Composer
+
+Sau khi tự dựng bản đồ, người dùng vẫn có thể biên tập đầy đủ:
 
 - Nền đường phố OpenStreetMap, vệ tinh Esri, VN-SDI hoặc nền trắng.
 - Overlay biên giới/địa giới VN-SDI/DOSM độc lập với basemap.
-- Nạp GeoJSON/JSON ranh giới tỉnh, huyện, xã bằng chọn file hoặc kéo-thả.
-- Click polygon để chọn xã mục tiêu và làm nổi bật.
-- Sơ đồ vị trí tự tạo từ dữ liệu GeoJSON, đánh dấu xã đang chọn.
-- Lưới kinh/vĩ độ WGS 84 theo **bước tọa độ thật**, tự động hoặc đặt 0,01° → 1°.
-- Nhãn tọa độ ở cả bốn cạnh khung bản đồ.
+- Nạp GeoJSON/JSON bằng chọn file hoặc kéo-thả.
+- Click polygon để chọn và làm nổi bật đối tượng.
+- Lưới kinh/vĩ độ WGS 84 theo bước tọa độ thật, tự động hoặc 0,01° → 1°.
+- Nhãn tọa độ ở bốn cạnh khung.
 - Tỷ lệ số 1:N và thước tỷ lệ đồ họa.
 - Mũi tên Bắc, chú giải, khung neatline kép, nguồn dữ liệu, ghi chú, mã bản đồ, ngày lập.
 - A4 / A3 / A2, ngang hoặc dọc.
 - Logo cơ quan tùy chọn.
-- Định vị nhanh theo vĩ độ/kinh độ.
-- Ghi chú trực tiếp lên map; kéo nhãn, nhấp đúp để xóa.
-- Preset “Bản đồ hành chính cấp xã”.
-- Lưu/nạp toàn bộ project JSON gồm layout, extent, GeoJSON, logo và ghi chú.
-- PNG 1.5× / 2× / 3×, PDF đúng khổ giấy và Print / Save PDF.
+- Định vị theo vĩ độ/kinh độ.
+- Ghi chú trực tiếp; kéo nhãn, nhấp đúp để xóa.
+- Lưu/nạp project JSON.
+- PNG 1.5× / 2× / 3×, PDF và Print / Save PDF.
 
-## Nguồn bản đồ
+## Kiến trúc
+
+```text
+                 Tên xã / phường
+                        ↓
+              Administrative Index
+             34 tỉnh · 3.321 xã
+                        ↓
+             Resolve province + code
+                        ↓
+       ┌────────────────┴────────────────┐
+       ↓                                 ↓
+ Commune GeoJSON                  Province GeoJSON
+       ↓                                 ↓
+ Main Map target                Province context
+       ↓                                 ↓
+ auto extent                    Inset location map
+       └────────────────┬────────────────┘
+                        ↓
+                Vietflex Map Composer
+                        ↓
+      Grid · Scale · North · Labels · Legend
+                        ↓
+                  A2 / A3 / A4
+                        ↓
+                 PNG / PDF / Print
+```
+
+## Nguồn dữ liệu và thư viện
 
 - `Vietflexmap/anhmap`: https://github.com/Vietflexmap/anhmap
 - VN-SDI: https://vnsdi.mae.gov.vn/bandohanhchinh/
 - Bản đồ hành chính VN-SDI: `https://vnsdi.mae.gov.vn/server/rest/services/BDHCVN/BanDoHanhChinhVietNam/MapServer`
-- Lớp biên giới/địa giới DOSM/VN-SDI: `https://dosm.vnsdi.gov.vn/server/rest/services/Hosted/DuongBienGioiDiaGioi_dam_09112023/MapServer`
-- OpenStreetMap contributors.
+- Lớp biên giới/địa giới DOSM/VN-SDI.
+- Vietnamese Provinces Database: https://github.com/thanglequoc/vietnamese-provinces-database — danh mục hành chính và GeoJSON, MIT License.
+- OpenStreetMap contributors; Nominatim chỉ được dùng như nguồn fallback.
 - Esri World Imagery khi người dùng chọn lớp vệ tinh.
+- Leaflet, Esri Leaflet, html2canvas và jsPDF.
 
-## Quy trình tạo bản đồ xã
-
-1. Chọn **Preset** để đưa layout về cấu hình hành chính chuẩn.
-2. Chọn A3/A4/A2 và hướng giấy.
-3. Nhập tỉnh, xã, tên bản đồ, mã bản đồ, cơ quan và người lập.
-4. Nạp file GeoJSON có ranh giới xã và các xã lân cận.
-5. Click xã cần xuất; ứng dụng làm nổi bật xã và tạo inset vị trí.
-6. Chọn nền; bật lớp biên giới/địa giới VN-SDI.
-7. Chỉnh extent, độ đậm nền/ranh giới, bước lưới và thêm ghi chú.
-8. Kiểm tra tỷ lệ, chú giải, nguồn dữ liệu và sơ đồ vị trí.
-9. Xuất PNG/PDF hoặc dùng Print / Save PDF.
-10. Lưu project JSON để mở lại và xuất các phiên bản tiếp theo.
+Xem `THIRD_PARTY_NOTICES.md` để biết ghi nguồn/phần mềm bên thứ ba.
 
 ## Lưu ý kỹ thuật
 
-- WebGIS chạy phía trình duyệt; không cần backend.
-- GeoJSON nên dùng WGS 84 / EPSG:4326 để hiển thị trực tiếp.
-- Một số máy chủ ảnh nền có thể hạn chế CORS khi chụp bằng `html2canvas`. Khi đó hãy dùng **Print / Save PDF**, hoặc chọn **Nền trắng · chỉ ranh giới** để xuất layout vector/DOM sạch hơn.
-- Tỷ lệ số hiển thị là tỷ lệ xấp xỉ theo Web Mercator và kích thước hiển thị trình duyệt; bản đồ phục vụ hồ sơ đo đạc/pháp lý phải được thành lập và kiểm tra theo quy chuẩn chuyên ngành phù hợp.
-- Dữ liệu VN-SDI và dữ liệu bên thứ ba tiếp tục tuân theo điều kiện sử dụng/ghi nguồn của nhà cung cấp.
+- WebGIS chạy phía trình duyệt, không cần backend.
+- GeoJSON tự động và thủ công được hiển thị theo WGS 84 / EPSG:4326.
+- Danh mục được cache theo phiên trình duyệt để giảm tải mạng.
+- Một số máy chủ nền có thể hạn chế CORS khi chụp bằng `html2canvas`; khi đó dùng **Print / Save PDF** hoặc nền trắng.
+- Tỷ lệ số là tỷ lệ xấp xỉ theo Web Mercator và kích thước hiển thị trình duyệt.
+- Bản đồ phục vụ hồ sơ pháp lý, đo đạc hoặc công bố chính thức phải được kiểm tra với dữ liệu địa giới, văn bản và quy chuẩn chuyên ngành hiện hành.
 
 ## License
 
