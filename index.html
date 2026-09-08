@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#16324f" />
-  <title>Vietflexmap · Bản đồ cấp xã</title>
+  <meta name="theme-color" content="#102a3d" />
+  <meta name="description" content="Vietflexmap Map Composer - tạo nhanh layout bản đồ hành chính cấp xã." />
+  <title>Vietflexmap · Map Composer cấp xã</title>
 
   <link rel="preconnect" href="https://unpkg.com" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
@@ -20,20 +21,22 @@
     <aside class="editor" aria-label="Bảng biên tập bản đồ">
       <div class="brand">
         <div class="brand-mark">VF</div>
-        <div>
+        <div class="brand-copy">
           <strong>Vietflexmap</strong>
-          <span>Commune Map Composer</span>
+          <span>COMMUNE MAP COMPOSER · 2026</span>
         </div>
+        <button id="presetBtn" class="brand-action" title="Áp dụng preset bản đồ hành chính cấp xã">Preset</button>
       </div>
 
       <div class="editor-scroll">
         <section class="panel-section">
-          <h2>1. Khổ bản đồ</h2>
+          <div class="section-title"><span>01</span><h2>Khổ & bố cục</h2></div>
           <div class="row two">
             <label>Khổ giấy
               <select id="pageSize">
                 <option value="A4">A4</option>
                 <option value="A3" selected>A3</option>
+                <option value="A2">A2</option>
               </select>
             </label>
             <label>Hướng giấy
@@ -43,15 +46,36 @@
               </select>
             </label>
           </div>
+          <div class="row two">
+            <label>Bước lưới tọa độ
+              <select id="gridInterval">
+                <option value="auto" selected>Tự động</option>
+                <option value="0.01">0,01°</option>
+                <option value="0.02">0,02°</option>
+                <option value="0.05">0,05°</option>
+                <option value="0.1">0,10°</option>
+                <option value="0.25">0,25°</option>
+                <option value="0.5">0,50°</option>
+                <option value="1">1,00°</option>
+              </select>
+            </label>
+            <label>Độ phân giải PNG
+              <select id="exportScale">
+                <option value="1.5">Nhanh · 1.5×</option>
+                <option value="2" selected>Chuẩn · 2×</option>
+                <option value="3">In đẹp · 3×</option>
+              </select>
+            </label>
+          </div>
         </section>
 
         <section class="panel-section">
-          <h2>2. Nội dung bản đồ</h2>
+          <div class="section-title"><span>02</span><h2>Nội dung tờ bản đồ</h2></div>
           <label>Tên bản đồ
-            <input id="titleInput" value="BẢN ĐỒ HÀNH CHÍNH XÃ" />
+            <input id="titleInput" value="BẢN ĐỒ HÀNH CHÍNH CẤP XÃ" />
           </label>
           <label>Phụ đề
-            <input id="subtitleInput" value="Bản đồ phục vụ tra cứu và trình bày nhanh" />
+            <input id="subtitleInput" value="Bản đồ phục vụ tra cứu, báo cáo và trình bày nhanh" />
           </label>
           <div class="row two">
             <label>Tỉnh / thành phố
@@ -61,53 +85,81 @@
               <input id="communeInput" placeholder="Ví dụ: Xã Vĩnh Thịnh" />
             </label>
           </div>
+          <div class="row two">
+            <label>Mã tờ / mã bản đồ
+              <input id="mapCodeInput" value="VF-COMMUNE" />
+            </label>
+            <label>Người lập
+              <input id="authorInput" value="Long Ngo" />
+            </label>
+          </div>
           <label>Cơ quan / đơn vị
             <input id="agencyInput" value="VIETFLEXMAP · BẢN ĐỒ SỐ VIỆT NAM" />
           </label>
+          <div class="file-box compact-file">
+            <strong>Logo cơ quan (tùy chọn)</strong>
+            <span>PNG/JPG/SVG. Logo chỉ được nhúng trong trình duyệt và bản xuất.</span>
+            <input id="logoInput" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+            <button id="clearLogoBtn" class="mini secondary" type="button">Bỏ logo</button>
+          </div>
           <label>Nguồn dữ liệu
-            <textarea id="sourceInput" rows="2">Nền bản đồ: OpenStreetMap / VN-SDI. Ranh giới chi tiết: dữ liệu GeoJSON do người dùng cung cấp.</textarea>
+            <textarea id="sourceInput" rows="2">Nền bản đồ: Vietflexmap / OpenStreetMap / VN-SDI. Ranh giới chi tiết: dữ liệu GeoJSON do người dùng cung cấp.</textarea>
           </label>
           <label>Ghi chú
-            <textarea id="noteInput" rows="3">Ranh giới và thông tin trên bản đồ cần được đối chiếu với hồ sơ pháp lý hiện hành trước khi sử dụng chính thức.</textarea>
+            <textarea id="noteInput" rows="3">Ranh giới và thông tin trên bản đồ cần được đối chiếu với hồ sơ pháp lý, dữ liệu địa giới và văn bản hiện hành trước khi sử dụng chính thức.</textarea>
           </label>
         </section>
 
         <section class="panel-section">
-          <h2>3. Lớp bản đồ</h2>
+          <div class="section-title"><span>03</span><h2>Nền & ranh giới</h2></div>
           <label>Nền bản đồ
             <select id="basemapSelect">
-              <option value="osm" selected>OpenStreetMap</option>
+              <option value="osm" selected>Vietflex · nền đường phố OSM</option>
+              <option value="imagery">Vệ tinh · Esri World Imagery</option>
               <option value="vnsdi">VN-SDI · Bản đồ hành chính</option>
-              <option value="none">Không nền</option>
+              <option value="none">Nền trắng · chỉ ranh giới</option>
             </select>
           </label>
           <div class="switch-grid">
-            <label class="switch-row"><input id="adminToggle" type="checkbox" checked /><span>Ranh giới hành chính VN-SDI</span></label>
+            <label class="switch-row"><input id="adminToggle" type="checkbox" checked /><span>Phủ ranh giới VN-SDI</span></label>
             <label class="switch-row"><input id="gridToggle" type="checkbox" checked /><span>Lưới tọa độ</span></label>
-            <label class="switch-row"><input id="featureLabelToggle" type="checkbox" checked /><span>Nhãn đối tượng GeoJSON</span></label>
-            <label class="switch-row"><input id="insetToggle" type="checkbox" checked /><span>Sơ đồ vị trí xã</span></label>
+            <label class="switch-row"><input id="featureLabelToggle" type="checkbox" checked /><span>Nhãn GeoJSON</span></label>
+            <label class="switch-row"><input id="insetToggle" type="checkbox" checked /><span>Sơ đồ vị trí</span></label>
+            <label class="switch-row"><input id="watermarkToggle" type="checkbox" checked /><span>Watermark Vietflexmap</span></label>
+            <label class="switch-row"><input id="zoomControlToggle" type="checkbox" /><span>Nút zoom khi xuất</span></label>
           </div>
           <label>Độ đậm nền
-            <input id="baseOpacity" type="range" min="0" max="1" value="0.78" step="0.05" />
+            <input id="baseOpacity" type="range" min="0" max="1" value="0.72" step="0.05" />
           </label>
           <label>Độ đậm ranh giới
-            <input id="boundaryOpacity" type="range" min="0.2" max="1" value="0.95" step="0.05" />
+            <input id="boundaryOpacity" type="range" min="0.2" max="1" value="0.98" step="0.05" />
           </label>
-          <div class="file-box">
+
+          <div class="file-box drop-box" id="geoDropBox">
             <strong>Ranh giới tỉnh / huyện / xã</strong>
-            <span>Nạp GeoJSON hoặc JSON để có ranh giới cấp xã chính xác theo dữ liệu của bạn.</span>
+            <span>Kéo thả hoặc chọn GeoJSON/JSON. Click một polygon để chọn xã mục tiêu và tạo sơ đồ vị trí.</span>
             <input id="geojsonInput" type="file" accept=".geojson,.json,application/geo+json,application/json" />
           </div>
           <div class="button-row">
             <button id="fitDataBtn" class="secondary">Zoom dữ liệu</button>
             <button id="clearDataBtn" class="secondary danger">Xóa GeoJSON</button>
           </div>
+          <p id="dataSummary" class="status">Chưa nạp GeoJSON địa phương.</p>
           <p id="serviceStatus" class="status">Đang kiểm tra dịch vụ VN-SDI…</p>
         </section>
 
         <section class="panel-section">
-          <h2>4. Nhãn & ghi chú</h2>
-          <p class="help">Bấm “Thêm ghi chú”, sau đó click vị trí trên bản đồ và nhập nội dung.</p>
+          <div class="section-title"><span>04</span><h2>Định vị & ghi chú</h2></div>
+          <div class="row coord-row">
+            <label>Vĩ độ
+              <input id="latInput" inputmode="decimal" placeholder="10.123456" />
+            </label>
+            <label>Kinh độ
+              <input id="lngInput" inputmode="decimal" placeholder="106.123456" />
+            </label>
+            <button id="goCoordBtn" class="secondary coord-go">Đến vị trí</button>
+          </div>
+          <p class="help">Bấm “Thêm ghi chú”, click lên bản đồ rồi nhập nội dung. Nhãn có thể kéo; nhấp đúp để xóa.</p>
           <div class="button-row">
             <button id="addAnnotationBtn" class="secondary">+ Thêm ghi chú</button>
             <button id="clearAnnotationsBtn" class="secondary danger">Xóa ghi chú</button>
@@ -115,18 +167,26 @@
         </section>
 
         <section class="panel-section">
-          <h2>5. Xuất bản đồ</h2>
+          <div class="section-title"><span>05</span><h2>Project & xuất bản đồ</h2></div>
+          <div class="button-row">
+            <button id="saveProjectBtn" class="secondary">Lưu project JSON</button>
+            <label class="file-button secondary">Nạp project<input id="loadProjectInput" type="file" accept=".json,application/json" /></label>
+          </div>
           <div class="export-grid">
             <button id="exportPngBtn" class="primary">Xuất PNG</button>
             <button id="exportPdfBtn" class="primary">Xuất PDF</button>
             <button id="printBtn" class="secondary">In / Save PDF</button>
             <button id="resetBtn" class="secondary">Về Việt Nam</button>
           </div>
-          <p class="help">PNG/PDF dùng ảnh chụp layout. Nếu máy chủ nền chặn CORS, dùng “In / Save PDF” để giữ nền bản đồ đầy đủ.</p>
+          <p class="help">Nếu máy chủ nền chặn CORS khi xuất ảnh, dùng “In / Save PDF”. Layout, ranh giới vector, lưới và chú giải vẫn giữ nguyên.</p>
         </section>
       </div>
 
-      <div class="editor-footer">© 2026 Long Ngo · Vietflexmap</div>
+      <div class="editor-footer">
+        <span>© 2026 Long Ngo · Vietflexmap</span>
+        <span class="footer-dot">•</span>
+        <a href="https://github.com/Vietflexmap/bando" target="_blank" rel="noopener">GitHub</a>
+      </div>
     </aside>
 
     <main class="workspace">
@@ -134,20 +194,25 @@
         <span id="paperBadge">A3 · Ngang</span>
         <span id="cursorCoords">Kinh độ — · Vĩ độ —</span>
         <span id="scaleRatio">Tỷ lệ ~ 1:—</span>
+        <span id="gridBadge">Lưới: tự động</span>
       </div>
 
       <div class="sheet-stage">
         <article id="mapSheet" class="map-sheet" data-size="A3" data-orientation="landscape">
           <header class="sheet-header">
-            <div class="agency" id="agencyText">VIETFLEXMAP · BẢN ĐỒ SỐ VIỆT NAM</div>
+            <div class="agency-cell">
+              <img id="agencyLogo" class="agency-logo" alt="Logo cơ quan" hidden />
+              <div class="agency" id="agencyText">VIETFLEXMAP · BẢN ĐỒ SỐ VIỆT NAM</div>
+            </div>
             <div class="title-block">
-              <h1 id="mapTitle">BẢN ĐỒ HÀNH CHÍNH XÃ</h1>
+              <h1 id="mapTitle">BẢN ĐỒ HÀNH CHÍNH CẤP XÃ</h1>
               <div id="mapPlace" class="map-place">TỈNH / THÀNH PHỐ · XÃ / PHƯỜNG</div>
-              <p id="mapSubtitle">Bản đồ phục vụ tra cứu và trình bày nhanh</p>
+              <p id="mapSubtitle">Bản đồ phục vụ tra cứu, báo cáo và trình bày nhanh</p>
             </div>
             <div class="map-code">
-              <span>MAP SHEET</span>
-              <strong id="mapDate">2026</strong>
+              <span>MÃ BẢN ĐỒ</span>
+              <strong id="mapCodePrint">VF-COMMUNE</strong>
+              <small id="mapDate">—</small>
             </div>
           </header>
 
@@ -179,16 +244,17 @@
                 <div id="insetCaption" class="inset-caption">Vị trí xã trong tỉnh</div>
               </aside>
 
-              <div class="map-watermark">VIETFLEXMAP</div>
+              <div id="mapWatermark" class="map-watermark">VIETFLEXMAP</div>
             </div>
 
             <aside class="map-sidecar">
               <section class="legend-card">
                 <h3>CHÚ GIẢI</h3>
-                <div class="legend-item"><span class="legend-line national"></span><span>Biên / ranh giới hành chính</span></div>
-                <div class="legend-item"><span class="legend-line local"></span><span>Ranh giới GeoJSON</span></div>
-                <div class="legend-item"><span class="legend-fill selected"></span><span>Xã / đối tượng đang chọn</span></div>
-                <div class="legend-item"><span class="legend-dot"></span><span>Ghi chú / vị trí</span></div>
+                <div class="legend-item"><span class="legend-line national"></span><span>Ranh giới hành chính / biên giới</span></div>
+                <div class="legend-item"><span class="legend-line local"></span><span>Ranh giới GeoJSON địa phương</span></div>
+                <div class="legend-item"><span class="legend-fill selected"></span><span>Đơn vị / đối tượng đang chọn</span></div>
+                <div class="legend-item"><span class="legend-dot"></span><span>Ghi chú / điểm định vị</span></div>
+                <div class="legend-item"><span class="legend-grid-icon"></span><span>Lưới kinh vĩ độ WGS 84</span></div>
               </section>
 
               <section class="info-card">
@@ -197,13 +263,15 @@
                   <dt>Tỉnh / TP</dt><dd id="provincePrint">—</dd>
                   <dt>Xã / phường</dt><dd id="communePrint">—</dd>
                   <dt>Hệ tọa độ hiển thị</dt><dd>WGS 84 · EPSG:4326</dd>
-                  <dt>Nền WebGIS</dt><dd id="basemapPrint">OpenStreetMap</dd>
+                  <dt>Nền WebGIS</dt><dd id="basemapPrint">Vietflex · OSM</dd>
+                  <dt>Số đối tượng</dt><dd id="featureCountPrint">0</dd>
+                  <dt>Ngày lập</dt><dd id="datePrint">—</dd>
                 </dl>
               </section>
 
               <section class="note-card">
                 <h3>GHI CHÚ</h3>
-                <p id="notePrint">Ranh giới và thông tin trên bản đồ cần được đối chiếu với hồ sơ pháp lý hiện hành trước khi sử dụng chính thức.</p>
+                <p id="notePrint">Ranh giới và thông tin trên bản đồ cần được đối chiếu với hồ sơ pháp lý, dữ liệu địa giới và văn bản hiện hành trước khi sử dụng chính thức.</p>
               </section>
             </aside>
           </section>
@@ -211,11 +279,11 @@
           <footer class="sheet-footer">
             <div class="source-block">
               <strong>NGUỒN DỮ LIỆU</strong>
-              <span id="sourcePrint">Nền bản đồ: OpenStreetMap / VN-SDI. Ranh giới chi tiết: dữ liệu GeoJSON do người dùng cung cấp.</span>
+              <span id="sourcePrint">Nền bản đồ: Vietflexmap / OpenStreetMap / VN-SDI. Ranh giới chi tiết: dữ liệu GeoJSON do người dùng cung cấp.</span>
             </div>
             <div class="credits-block">
               <strong>VIETFLEXMAP MAP COMPOSER</strong>
-              <span>Thiết kế: Long Ngo · Xuất tự động trên trình duyệt</span>
+              <span id="authorPrint">Thiết kế / biên tập: Long Ngo</span>
             </div>
           </footer>
         </article>
