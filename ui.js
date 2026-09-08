@@ -100,7 +100,11 @@
       if (label) label.textContent = open ? 'Ẩn tùy chọn' : 'Biên tập';
       controls.toggle.setAttribute('aria-expanded', String(open));
     }
-    if (controls.fab) controls.fab.setAttribute('aria-hidden', String(open && mobileQuery.matches));
+    if (controls.fab) {
+      const hidden = open && mobileQuery.matches;
+      controls.fab.setAttribute('aria-hidden', String(hidden));
+      controls.fab.style.display = mobileQuery.matches ? (hidden ? 'none' : 'flex') : '';
+    }
   }
 
   function enterPreview() {
@@ -118,8 +122,10 @@
     body.classList.remove('preview-mode');
     if (mobileQuery.matches) {
       body.classList.remove('editor-collapsed', 'editor-open');
+      updateEditorButtons(false);
     } else {
       body.classList.toggle('editor-collapsed', !desktopEditorOpen);
+      updateEditorButtons(desktopEditorOpen);
     }
     scheduleFit(120);
   }
