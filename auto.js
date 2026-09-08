@@ -4,7 +4,6 @@
   const INDEX_URL = 'https://raw.githubusercontent.com/thanglequoc/vietnamese-provinces-database/master/json/vn_only_simplified_json_generated_data_vn_units_minified.json';
   const RAW_ROOT = 'https://raw.githubusercontent.com/thanglequoc/vietnamese-provinces-database/master/json/geojson';
   const API_ROOT = 'https://api.github.com/repos/thanglequoc/vietnamese-provinces-database/contents/json/geojson';
-  const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
   const CACHE_KEY = 'vf-admin-index-2026-07-25-v1';
   const maps = window.__vfMaps || [];
   const mainMap = maps[0];
@@ -65,7 +64,7 @@
       </div>
       <div id="autoResults" class="auto-results" aria-live="polite"></div>
       <p id="autoStatus" class="auto-status">Đang khởi tạo danh mục hành chính…</p>
-      <p class="auto-source-note">Polygon tự động dùng dữ liệu GeoJSON mở (MIT) và được trình bày cùng nền/địa giới VN-SDI. Bản đồ xuất nhanh vẫn cần đối chiếu hồ sơ pháp lý khi dùng chính thức.</p>
+      <p class="auto-source-note">Polygon tự động dùng dữ liệu GeoJSON mở (MIT), nền Vietflex Google Roadmap và địa giới tham chiếu VN-SDI. Bản đồ xuất nhanh vẫn cần đối chiếu hồ sơ pháp lý khi dùng chính thức.</p>
     `;
     host.prepend(section);
   }
@@ -222,19 +221,7 @@
       const results = $('autoResults'); if (results) results.innerHTML = '';
     } catch (error) {
       console.error(error);
-      setStatus('Nguồn GeoJSON chính không phản hồi; đang thử nguồn OSM dự phòng…', 'warn');
-      try {
-        const fallback = await fetchNominatim(record);
-        applyAutomaticMetadata(record);
-        await feedGeoJSON({ type: 'FeatureCollection', features: [fallback.ward] }, record);
-        if (fallback.province) drawAutomaticInset(fallback.province, fallback.ward, record);
-        fitMainMapToAutomaticTarget(record.ward.Code);
-        updateAutomaticSource(record, true);
-        setStatus(`Đã dựng bằng nguồn dự phòng OSM · ${record.ward.FullName}. Hãy kiểm tra ranh giới trước khi xuất.`, 'warn');
-      } catch (fallbackError) {
-        console.error(fallbackError);
-        setStatus('Không thể tự tải polygon cho đơn vị này. Bạn vẫn có thể nạp GeoJSON thủ công ở mục Nền & ranh giới.', 'warn');
-      }
+      setStatus('Không thể tự tải polygon cho đơn vị này. Hãy thử lại hoặc nạp GeoJSON thủ công ở mục Nền & ranh giới.', 'warn');
     } finally {
       if (button) { button.disabled = false; button.textContent = original; }
     }
@@ -251,15 +238,13 @@
     if ($('autoCommune')) $('autoCommune').value = stripUnitPrefix(record.ward.FullName);
   }
 
-  function updateAutomaticSource(record, fallback = false) {
-    const source = fallback
-      ? 'Ranh giới tự động: OpenStreetMap/Nominatim (nguồn dự phòng). Nền và địa giới tham chiếu: Vietflexmap / OpenStreetMap / VN-SDI.'
-      : 'Ranh giới tự động: Vietnamese Provinces Database (MIT, dữ liệu GeoJSON đơn vị hành chính Việt Nam). Nền và địa giới tham chiếu: Vietflexmap / OpenStreetMap / VN-SDI.';
+  function updateAutomaticSource(record) {
+    const source = 'Ranh giới tự động: Vietnamese Provinces Database (MIT, dữ liệu GeoJSON đơn vị hành chính Việt Nam). Nền: Vietflex Map Core / Google Roadmap. Địa giới tham chiếu: VN-SDI/DOSM.';
     setValue('sourceInput', source);
     const summary = $('dataSummary');
     if (summary) {
       summary.textContent = `AUTO · ${record.ward.FullName} · mã ${record.ward.Code} · ${record.province.FullName}`;
-      summary.className = fallback ? 'status warn' : 'status ok';
+      summary.className = 'status ok';
     }
   }
 
@@ -394,22 +379,6 @@
     }
     const caption = $('insetCaption');
     if (caption) caption.textContent = `${record.ward.FullName} trong ${record.province.FullName}`;
-  }
-
-  async function fetchNominatim(record) {
-    const ward = await nominatimPolygon(`${record.ward.FullName}, ${record.province.FullName}, Việt Nam`, record, 'target');
-    let province = null;
-    try { province = await nominatimPolygon(`${record.province.FullName}, Việt Nam`, record, 'province_context'); } catch (_) {}
-    return { ward, province };
-  }
-
-  async function nominatimPolygon(query, record, role) {
-    const url = `${NOMINATIM}?format=geojson&polygon_geojson=1&addressdetails=1&countrycodes=vn&limit=5&q=${encodeURIComponent(query)}`;
-    const data = await fetchJson(url);
-    const feature = (data.features || []).find(f => ['Polygon', 'MultiPolygon'].includes(f.geometry?.type));
-    if (!feature) throw new Error(`Nominatim không có polygon: ${query}`);
-    if (role === 'target') return prepareFeature(feature, record, role);
-    return prepareProvinceFeature(feature, record.province);
   }
 
   function selectProvinceByText(text) {
