@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#102a3d" />
-  <meta name="description" content="Vietflexmap Map Composer - tạo nhanh layout bản đồ hành chính cấp xã." />
-  <title>Vietflexmap · Map Composer cấp xã</title>
+  <meta name="description" content="Vietflexmap Automatic Commune Map Generator - gõ tên xã/phường để tự dựng bản đồ hành chính chuyên nghiệp." />
+  <title>Vietflexmap · Automatic Commune Map Generator</title>
 
   <link rel="preconnect" href="https://unpkg.com" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
@@ -23,7 +23,7 @@
         <div class="brand-mark">VF</div>
         <div class="brand-copy">
           <strong>Vietflexmap</strong>
-          <span>COMMUNE MAP COMPOSER · 2026</span>
+          <span>AUTOMATIC COMMUNE MAP GENERATOR · 2026</span>
         </div>
         <button id="presetBtn" class="brand-action" title="Áp dụng preset bản đồ hành chính cấp xã">Preset</button>
       </div>
@@ -292,6 +292,18 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script>
+    window.__vfMaps = [];
+    (() => {
+      const leafletMapFactory = L.map;
+      L.map = function (...args) {
+        const instance = leafletMapFactory(...args);
+        window.__vfMaps.push(instance);
+        return instance;
+      };
+    })();
+  </script>
   <script src="app.js"></script>
+  <script src="auto.js"></script>
 </body>
 </html>
