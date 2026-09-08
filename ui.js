@@ -8,12 +8,14 @@
   const sheet = $('mapSheet');
   const editor = document.querySelector('.editor');
   const mobileQuery = window.matchMedia('(max-width: 900px)');
+
+  if (!stage || !viewport || !sheet || !editor) return;
+
   let viewMode = 'fit';
   let previewing = false;
   let desktopEditorOpen = true;
   let resizeTimer = null;
-
-  if (!stage || !viewport || !sheet || !editor) return;
+  let lastScale = 1;
 
   const controls = {
     toggle: $('toggleEditorBtn'), close: $('editorCloseBtn'), backdrop: $('editorBackdrop'), fab: $('openEditorFab'),
@@ -31,12 +33,19 @@
     bindControls();
     observeSheet();
     protectFullResolutionExport();
-    scheduleFit(40);
+    scheduleFit(60);
+
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => { applyResponsiveEditor(false); fitSheet(); }, 80);
+      resizeTimer = setTimeout(() => {
+        applyResponsiveEditor(false);
+        fitSheet();
+      }, 90);
     });
-    mobileQuery.addEventListener?.('change', () => { applyResponsiveEditor(false); scheduleFit(120); });
+    mobileQuery.addEventListener?.('change', () => {
+      applyResponsiveEditor(false);
+      scheduleFit(120);
+    });
     document.addEventListener('keydown', onKeyDown);
     monitorAutomaticGenerator();
   }
@@ -55,8 +64,8 @@
     proxy(controls.previewPrint, 'printBtn');
     proxy(controls.quickPng, 'exportPngBtn');
     proxy(controls.quickPdf, 'exportPdfBtn');
-    $('pageSize')?.addEventListener('change', () => scheduleFit(140));
-    $('orientation')?.addEventListener('change', () => scheduleFit(140));
+    $('pageSize')?.addEventListener('change', () => scheduleFit(150));
+    $('orientation')?.addEventListener('change', () => scheduleFit(150));
   }
 
   function proxy(button, targetId) {
@@ -79,7 +88,7 @@
       try { localStorage.setItem('vf-editor-open', open ? '1' : '0'); } catch (_) {}
     }
     updateEditorButtons(open);
-    scheduleFit(immediate ? 0 : 250);
+    scheduleFit(immediate ? 0 : 260);
   }
 
   function applyResponsiveEditor(initial) {
@@ -110,10 +119,9 @@
   function enterPreview() {
     if (previewing) return;
     previewing = true;
-    body.classList.add('preview-mode');
+    body.classList.add('preview-mode', 'editor-collapsed');
     body.classList.remove('editor-open');
-    body.classList.add('editor-collapsed');
-    scheduleFit(80);
+    scheduleFit(90);
   }
 
   function exitPreview() {
@@ -140,29 +148,47 @@
     fitSheet();
   }
 
+  function rawSheetSize() {
+    const oldZoom = sheet.style.zoom;
+    sheet.style.zoom = '1';
+    sheet.style.transform = 'none';
+    const width = sheet.offsetWidth;
+    const height = sheet.offsetHeight;
+    sheet.style.zoom = oldZoom || '1';
+    return { width, height };
+  }
+
   function fitSheet() {
     if (!sheet.isConnected || !stage.clientWidth || !stage.clientHeight) return;
-    sheet.style.transform = 'none';
-    const rawW = sheet.offsetWidth;
-    const rawH = sheet.offsetHeight;
+
+    const { width: rawW, height: rawH } = rawSheetSize();
     if (!rawW || !rawH) return;
+
     let scale = 1;
     if (viewMode === 'fit') {
       const cs = getComputedStyle(stage);
       const padX = parseFloat(cs.paddingLeft || 0) + parseFloat(cs.paddingRight || 0);
       const padY = parseFloat(cs.paddingTop || 0) + parseFloat(cs.paddingBottom || 0);
       const reserve = previewing && mobileQuery.matches ? 54 : 0;
-      const availableW = Math.max(180, stage.clientWidth - padX - 4);
-      const availableH = Math.max(180, stage.clientHeight - padY - reserve - 4);
+      const availableW = Math.max(180, stage.clientWidth - padX - 6);
+      const availableH = Math.max(180, stage.clientHeight - padY - reserve - 6);
       scale = Math.min(1, availableW / rawW, availableH / rawH);
       scale = Math.max(.12, scale);
     }
-    sheet.style.transform = `scale(${scale})`;
+
+    lastScale = scale;
+    sheet.style.transform = 'none';
+    sheet.style.zoom = String(scale);
     viewport.style.width = `${Math.ceil(rawW * scale)}px`;
     viewport.style.height = `${Math.ceil(rawH * scale)}px`;
     viewport.dataset.scale = scale.toFixed(3);
+
     const label = controls.fit?.querySelector('.fit-percent');
     if (label) label.textContent = `${Math.round(scale * 100)}%`;
+
+    requestAnimationFrame(() => {
+      (window.__vfMaps || []).forEach(map => map?.invalidateSize?.({ pan: false }));
+    });
   }
 
   function scheduleFit(delay = 0) {
@@ -173,7 +199,7 @@
     const observer = new MutationObserver(() => scheduleFit(80));
     observer.observe(sheet, { attributes: true, attributeFilter: ['data-size', 'data-orientation', 'class'] });
     if ('ResizeObserver' in window) {
-      const ro = new ResizeObserver(() => scheduleFit(20));
+      const ro = new ResizeObserver(() => scheduleFit(30));
       ro.observe(stage);
     }
   }
@@ -192,7 +218,10 @@
       };
       title.addEventListener('click', toggle);
       title.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle();
+        }
       });
       if (mobileQuery.matches && index > 1 && index < 4) {
         section.classList.add('section-collapsed');
@@ -207,14 +236,26 @@
     window.html2canvas = async function(...args) {
       body.classList.add('export-clean');
       const oldTransform = sheet.style.transform;
+      const oldZoom = sheet.style.zoom;
+      const oldViewportW = viewport.style.width;
+      const oldViewportH = viewport.style.height;
+
       sheet.style.transform = 'none';
+      sheet.style.zoom = '1';
+      viewport.style.width = `${sheet.offsetWidth}px`;
+      viewport.style.height = `${sheet.offsetHeight}px`;
+      (window.__vfMaps || []).forEach(map => map?.invalidateSize?.({ pan: false }));
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
       try {
         return await original.apply(this, args);
       } finally {
         sheet.style.transform = oldTransform;
+        sheet.style.zoom = oldZoom || String(lastScale);
+        viewport.style.width = oldViewportW;
+        viewport.style.height = oldViewportH;
         body.classList.remove('export-clean');
-        scheduleFit(30);
+        scheduleFit(40);
       }
     };
   }
@@ -239,7 +280,13 @@
     const tag = document.activeElement?.tagName?.toLowerCase();
     if (['input', 'textarea', 'select'].includes(tag)) return;
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p') return;
-    if (event.key.toLowerCase() === 'e') { event.preventDefault(); setEditorOpen(!isEditorOpen()); }
-    if (event.key.toLowerCase() === 'v') { event.preventDefault(); previewing ? exitPreview() : enterPreview(); }
+    if (event.key.toLowerCase() === 'e') {
+      event.preventDefault();
+      setEditorOpen(!isEditorOpen());
+    }
+    if (event.key.toLowerCase() === 'v') {
+      event.preventDefault();
+      previewing ? exitPreview() : enterPreview();
+    }
   }
 })();
